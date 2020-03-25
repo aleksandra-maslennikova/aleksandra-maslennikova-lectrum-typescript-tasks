@@ -16,8 +16,6 @@ interface EventEmitterHandlers {
     type: string,
     handler: EventHandler
   ) => void;
-  trigger: (this: EventEmitter, event: EventType, args: [unknown]) => void;
-  _dispatch: (this: EventEmitter, event: EventType, args: [unknown]) => void;
 }
 
 interface EventEmitter extends EventEmitterHandlers {
@@ -25,6 +23,8 @@ interface EventEmitter extends EventEmitterHandlers {
   events: EventsType;
   Event: EventType;
   mixin: (obj: EventEmitter, arr: actionType[]) => void;
+  trigger: (this: EventEmitter, event: EventType, args: [unknown]) => void;
+  _dispatch: (this: EventEmitter, event: EventType, args: [unknown]) => void;
 }
 
 interface EventType {
@@ -52,7 +52,7 @@ const Event: EventType = (function(this: EventType, type: string) {
   this.timeStamp = new Date();
 } as Function) as EventType;
 
-emitter.on = function(type: string, handler: EventHandler): EventEmitter {
+emitter.on = function(type, handler) {
   if (!this.events) {
     this.events = {};
     this.events[type] = [handler];
@@ -122,7 +122,10 @@ Emitter.mixin = function(obj: EventEmitter, arr: actionType[]) {
   var emitter: EventEmitter = new Emitter();
   arr.map(function(name: actionType) {
     obj[name] = function() {
-      return (emitter[name] as any).apply(emitter, arguments);
+      return emitter[name].apply(
+        emitter,
+        (arguments as unknown) as [string, EventHandler]
+      );
     };
   });
 };
