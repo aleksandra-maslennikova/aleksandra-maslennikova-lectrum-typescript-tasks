@@ -1,61 +1,62 @@
 type EventHandler = {
-    <T>(args: T):void
-}
+  <T>(args: T): void;
+};
 
-type EventsType =  {[key: string]: EventHandler[]};
+type EventsType = { [key: string]: EventHandler[] };
 
-type actionType = keyof EventEmitterHandlers
+type actionType = keyof EventEmitterHandlers;
 
 interface EventEmitterHandlers {
-  on: (type: string, handler: EventHandler) => EventEmitter
-  off: (type: string, handler: EventHandler) => void
-  _offAll: () => EventEmitter,
-  _offByType: (type: string) => EventEmitter,
-  _offByHandler:(type: string, handler: EventHandler) => void,
-  trigger: (event:string | EventType, args: any[]) => void,
-  _dispatch: (event: EventType, args: any[]) => void,
-
+  on: (this: EventEmitter, type: string, handler: EventHandler) => void;
+  off: (this: EventEmitter, type: string, handler: EventHandler) => void;
+  _offAll: (this: EventEmitter) => void;
+  _offByType: (this: EventEmitter, type: string) => void;
+  _offByHandler: (
+    this: EventEmitter,
+    type: string,
+    handler: EventHandler
+  ) => void;
+  trigger: (this: EventEmitter, event: EventType, args: [unknown]) => void;
+  _dispatch: (this: EventEmitter, event: EventType, args: [unknown]) => void;
 }
 
-interface  EventEmitter extends EventEmitterHandlers{
-  new():EventEmitter
-  events: EventsType,
-  Event: EventType,
-  mixin:( obj:EventEmitter , arr: actionType[])=>void,
+interface EventEmitter extends EventEmitterHandlers {
+  new (): EventEmitter;
+  events: EventsType;
+  Event: EventType;
+  mixin: (obj: EventEmitter, arr: actionType[]) => void;
 }
 
 interface EventType {
-  new(type: string): EventType
-    type: string,
-    timeStamp: Date
+  new (type: string): EventType;
+  type: string;
+  timeStamp: Date;
 }
-
 
 var emitter: EventEmitter = {} as EventEmitter;
 
- const Emitter: EventEmitter = (function(){
+const Emitter: EventEmitter = (function() {
   var e = Object.create(emitter);
   e.events = {};
   return e;
-}) as Function as EventEmitter
+} as Function) as EventEmitter;
 
 interface EventConstructor {
-  new(type: string): EventType,
-  type: string,
-  timeStamp: Date
+  new (type: string): EventType;
+  type: string;
+  timeStamp: Date;
 }
 
-
-const Event: EventType = (function(this: EventType, type: string){
+const Event: EventType = (function(this: EventType, type: string) {
   this.type = type;
   this.timeStamp = new Date();
-}) as Function as EventType
+} as Function) as EventType;
 
 emitter.on = function(type: string, handler: EventHandler): EventEmitter {
-   if(!this.events) {
-        this.events = {};
-        this.events[type] = [handler];
-   } 
+  if (!this.events) {
+    this.events = {};
+    this.events[type] = [handler];
+  }
   if (this.events.hasOwnProperty(type)) {
     this.events[type].push(handler);
   } else {
@@ -79,13 +80,13 @@ emitter.trigger = function(event, args) {
   if (typeof event === "string") {
     eventToDispatch = new Event(event);
   } else {
-    eventToDispatch = event
+    eventToDispatch = event;
   }
   return this._dispatch(eventToDispatch, args);
 };
 
 emitter._dispatch = function(event, args) {
-  if (!this.events ||  !this.events.hasOwnProperty(event.type)) return;
+  if (!this.events || !this.events.hasOwnProperty(event.type)) return;
   args = args || [];
   args.unshift(event);
 
@@ -117,11 +118,11 @@ emitter._offAll = function() {
 
 Emitter.Event = Event;
 
-Emitter.mixin = function(obj: EventEmitter , arr: actionType[]){
+Emitter.mixin = function(obj: EventEmitter, arr: actionType[]) {
   var emitter: EventEmitter = new Emitter();
-  arr.map(function(name:actionType){
-    obj[name] = function(){
-      return emitter[name].apply(emitter, arguments);
+  arr.map(function(name: actionType) {
+    obj[name] = function() {
+      return (emitter[name] as any).apply(emitter, arguments);
     };
   });
 };
